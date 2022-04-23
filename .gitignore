@@ -1,0 +1,7 @@
+*.conf
+*.crt
+*.csrcl
+*.key
+*.pem
+*.srl
+certs

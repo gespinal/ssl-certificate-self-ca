@@ -17,7 +17,7 @@ echo "### Check if certificate already exists for ${DOMAIN}..."
 EXISTS=`awk -v cmd='openssl x509 -noout -subject' '/BEGIN/{close(cmd)};{print | cmd}' < /etc/ssl/certs/ca-certificates.crt | grep ${DOMAIN}`
 if [[ ! -z "$EXISTS" ]]; then
   echo "Certificate for ${DOMAIN} already exists on this system."
-  exit 1;
+  # exit 1;
 fi
 
 echo "### Validating if ${CERTS_DIR} exists..."
@@ -45,9 +45,10 @@ subjectAltName = @alt_names
 [alt_names]
 DNS.1 = *.${DOMAIN}
 DNS.2 = *.ha.${DOMAIN}
-DNS.3 = *.heraklion.${DOMAIN}
+DNS.3 = *.k8s.${DOMAIN}
 DNS.4 = *.lab.${DOMAIN}
 DNS.5 = *.traefik.${DOMAIN}
+DNS.6 = *.heraklion.${DOMAIN}
 EOF
 
 echo "### Create the ca's cert and key for ${DOMAIN}..."
@@ -110,3 +111,6 @@ sudo update-ca-certificates
 
 echo "### Check installed certificate for ${DOMAIN}..." 
 awk -v cmd='openssl x509 -noout -subject' '/BEGIN/{close(cmd)};{print | cmd}' < /etc/ssl/certs/ca-certificates.crt | grep ${DOMAIN}
+
+echo "### Echo removing cert file from system dir..."
+sudo rm /usr/local/share/ca-certificates/${DOMAIN}.CA.crt

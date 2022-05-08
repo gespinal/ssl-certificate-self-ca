@@ -17,7 +17,7 @@ echo "### Check if certificate already exists for ${DOMAIN}..."
 EXISTS=`awk -v cmd='openssl x509 -noout -subject' '/BEGIN/{close(cmd)};{print | cmd}' < /etc/ssl/certs/ca-certificates.crt | grep ${DOMAIN}`
 if [[ ! -z "$EXISTS" ]]; then
   echo "Certificate for ${DOMAIN} already exists on this system."
-  # exit 1;
+  exit 1;
 fi
 
 echo "### Validating if ${CERTS_DIR} exists..."

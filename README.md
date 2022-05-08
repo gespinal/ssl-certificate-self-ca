@@ -2,7 +2,7 @@
 
 ### Notes:
 
-This script is designed to work on Ubuntu, but can be adapted to work under any linux distribution.
+This script is designed to work on Ubuntu (works on WSL2 perfectly), but can be adapted to work under any linux distribution.
 
 ### How to run this:
 
@@ -16,4 +16,4 @@ CERT: `example.com.crt`
 
 KEY: `example.com.key` 
 
-The script will also add it to your OS certificate list.
+The script will also add it to your OS certificate list, including Windows if under WSL2.

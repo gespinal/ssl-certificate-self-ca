@@ -87,10 +87,15 @@ openssl req -in ${CERTS_DIR}/${DOMAIN}.csr -noout -text
  
 echo "### Copy ${DOMAIN} cert file to system dir..."
 sudo cp ${CERTS_DIR}/${DOMAIN}.pem /usr/local/share/ca-certificates/${DOMAIN}.CA.crt
- 
+
+echo "### If on WSL: Copy ${DOMAIN} cert file into windows store..."
+if [[ $(uname -r) == *"WSL"* ]]; then
+  cp ${CERTS_DIR}/${DOMAIN}.pem /mnt/c/Windows/Temp
+  powershell.exe Start-Process powershell -Verb RunAs -ArgumentList "Import-Certificate, -FilePath, C:\\Windows\\Temp\\${DOMAIN}.pem, -CertStoreLocation, Cert:\LocalMachine\Root"
+fi
+
 echo "### Update OS certificates..."
 sudo update-ca-certificates
 
 echo "### Check installed certificate for ${DOMAIN}..." 
 awk -v cmd='openssl x509 -noout -subject' '/BEGIN/{close(cmd)};{print | cmd}' < /etc/ssl/certs/ca-certificates.crt | grep ${DOMAIN}
-

@@ -92,12 +92,16 @@ echo "### Create ${DOMAIN} fullchain..."
 cat ${CERTS_DIR}/${DOMAIN}-CERT.pem > ${CERTS_DIR}/${DOMAIN}-FULLCHAIN.pem
 cat ${CERTS_DIR}/${DOMAIN}-CA.pem >> ${CERTS_DIR}/${DOMAIN}-FULLCHAIN.pem
 
+echo "### Create ${DOMAIN} key-server chain..."
+cat ${CERTS_DIR}/${DOMAIN}.key > ${CERTS_DIR}/${DOMAIN}-KEYCHAIN.pem
+cat ${CERTS_DIR}/${DOMAIN}-CERT.pem >> ${CERTS_DIR}/${DOMAIN}-KEYCHAIN.pem
+
 echo "### Copy ${DOMAIN} cert file to system dir..."
 sudo cp ${CERTS_DIR}/${DOMAIN}-CA.pem /usr/local/share/ca-certificates/${DOMAIN}.CA.crt
 
 echo "### If on WSL: Copy ${DOMAIN} cert file into windows store..."
 if [[ $(uname -r) == *"WSL"* ]]; then
-  cp ${CERTS_DIR}/${DOMAIN}-CA.pem ${CERTS_DIR}/${DOMAIN}-FULLCHAIN.pem ${CERTS_DIR}/${DOMAIN}.key /mnt/c/Windows/Temp
+  cp ${CERTS_DIR}/${DOMAIN}-CA.pem ${CERTS_DIR}/${DOMAIN}-FULLCHAIN.pem ${CERTS_DIR}/${DOMAIN}-KEYCHAIN.pem ${CERTS_DIR}/${DOMAIN}.key /mnt/c/Windows/Temp
   powershell.exe Start-Process powershell -Verb RunAs -ArgumentList "Import-Certificate, -FilePath, C:\\Windows\\Temp\\${DOMAIN}-CA.pem, -CertStoreLocation, Cert:\LocalMachine\Root"
 fi
 

@@ -5,3 +5,4 @@
 *.pem
 *.srl
 certs
+.DS_Store

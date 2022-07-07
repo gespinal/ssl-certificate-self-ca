@@ -57,7 +57,7 @@ openssl req \
  -new \
  -x509 \
  -sha256 \
- -days 1825 \
+ -days 365 \
  -keyout ${CERTS_DIR}/${DOMAIN}.key \
  -out ${CERTS_DIR}/${DOMAIN}-CA.pem \
  -subj "/C=DR/ST=SD/L=DR/O=${DOMAIN%.*}/OU=${DOMAIN%.*}/CN=*.${DOMAIN}/emailAddress=admin@${DOMAIN}"
@@ -78,7 +78,7 @@ openssl x509 -req \
  -CAkey ${CERTS_DIR}/${DOMAIN}.key \
  -CAcreateserial \
  -out ${CERTS_DIR}/${DOMAIN}-CERT.pem \
- -days 1825 \
+ -days 365 \
  -sha256 \
  -extfile ${CERTS_DIR}/${DOMAIN}-csr.conf \
  -extensions v3_req
@@ -97,20 +97,27 @@ echo "### Create ${DOMAIN} key-server chain..."
 cat ${CERTS_DIR}/${DOMAIN}.key > ${CERTS_DIR}/${DOMAIN}-KEYCHAIN.pem
 cat ${CERTS_DIR}/${DOMAIN}-CERT.pem >> ${CERTS_DIR}/${DOMAIN}-KEYCHAIN.pem
 
-echo "### Copy ${DOMAIN} cert file to system dir..."
-sudo cp ${CERTS_DIR}/${DOMAIN}-CA.pem /usr/local/share/ca-certificates/${DOMAIN}.CA.crt
-
-echo "### If on WSL: Copy ${DOMAIN} cert file into windows store..."
-if [[ $(uname -r) == *"WSL"* ]]; then
-  cp ${CERTS_DIR}/${DOMAIN}-CA.pem ${CERTS_DIR}/${DOMAIN}-FULLCHAIN.pem ${CERTS_DIR}/${DOMAIN}-KEYCHAIN.pem ${CERTS_DIR}/${DOMAIN}.key /mnt/c/Windows/Temp
-  powershell.exe Start-Process powershell -Verb RunAs -ArgumentList "Import-Certificate, -FilePath, C:\\Windows\\Temp\\${DOMAIN}-CA.pem, -CertStoreLocation, Cert:\LocalMachine\Root"
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  echo "### Copy ${DOMAIN} cert file to system dir..."
+  sudo cp ${CERTS_DIR}/${DOMAIN}-CA.pem /usr/local/share/ca-certificates/${DOMAIN}.CA.crt
+  echo "### If on WSL: Copy ${DOMAIN} cert file into windows store..."
+  if [[ $(uname -r) == *"WSL"* ]]; then
+    cp ${CERTS_DIR}/${DOMAIN}-CA.pem ${CERTS_DIR}/${DOMAIN}-FULLCHAIN.pem ${CERTS_DIR}/${DOMAIN}-KEYCHAIN.pem ${CERTS_DIR}/${DOMAIN}.key /mnt/c/Windows/Temp
+    powershell.exe Start-Process powershell -Verb RunAs -ArgumentList "Import-Certificate, -FilePath, C:\\Windows\\Temp\\${DOMAIN}-CA.pem, -CertStoreLocation, Cert:\LocalMachine\Root"
+  fi
+  echo "### Update OS certificates..."
+  sudo update-ca-certificates
+  echo "### Check installed certificate for ${DOMAIN}..." 
+  awk -v cmd='openssl x509 -noout -subject' '/BEGIN/{close(cmd)};{print | cmd}' < /etc/ssl/certs/ca-certificates.crt | grep ${DOMAIN}
+  echo "### Echo removing cert file from system dir..."
+  sudo rm /usr/local/share/ca-certificates/${DOMAIN}.CA.crt
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  if [[ $(security find-certificate -a -e "admin@${DOMAIN}") ]]; then
+    echo "### Deleting old ${DOMAIN} certificate..."
+    sudo security delete-certificate -c "*.${DOMAIN}"
+  fi
+  echo "### Adding ${DOMAIN} certificate..."
+  sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ./certs/${DOMAIN}-CA.pem
+  echo "### Validating ${DOMAIN} certificate..."
+  security find-certificate -a -e "admin@example.com"
 fi
-
-echo "### Update OS certificates..."
-sudo update-ca-certificates
-
-echo "### Check installed certificate for ${DOMAIN}..." 
-awk -v cmd='openssl x509 -noout -subject' '/BEGIN/{close(cmd)};{print | cmd}' < /etc/ssl/certs/ca-certificates.crt | grep ${DOMAIN}
-
-echo "### Echo removing cert file from system dir..."
-sudo rm /usr/local/share/ca-certificates/${DOMAIN}.CA.crt

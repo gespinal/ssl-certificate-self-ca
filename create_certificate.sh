@@ -101,8 +101,13 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
   echo "### If on WSL: Copy ${DOMAIN} cert file into windows store..."
   if [[ $(uname -r) == *"WSL"* ]]; then
     cp "${CERTS_DIR}/${DOMAIN}-CA.pem" "${CERTS_DIR}/${DOMAIN}-FULLCHAIN.pem" "${CERTS_DIR}/${DOMAIN}-KEYCHAIN.pem" "${CERTS_DIR}/${DOMAIN}.key" /mnt/c/Windows/Temp
+    echo "### If on WSL: Importing cert to windows"
     powershell.exe Start-Process powershell -Verb RunAs -ArgumentList "Import-Certificate, -FilePath, C:\\Windows\\Temp\\${DOMAIN}-CA.pem, -CertStoreLocation, Cert:\LocalMachine\Root"
-    powershell.exe Start-Process powershell -Verb RunAs -ArgumentList -ExecutionPolicy Bypass -File "win_update_hosts.ps1 ${DOMAIN}"
+    echo "### If on WSL: Update ExecutionPolicy for scripts"
+    powershell.exe Start-Process powershell -Verb RunAs -ArgumentList "Set-ExecutionPolicy, Unrestricted, -force"
+    echo "### If on WSL: Update /etc/hosts"
+    cp ./win_update_hosts.ps1 /mnt/c/Windows/Temp && cd /mnt/c/Windows/Temp
+    powershell.exe Start-Process powershell -Verb RunAs -ArgumentList "'-File C:\\Windows\\Temp\\win_update_hosts.ps1', ${DOMAIN}"
   fi
   echo "### Update OS certificates..."
   sudo update-ca-certificates

@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # Wildcard SSL Certificate CA
 
@@ -23,7 +23,7 @@ echo "### Validating if ${CERTS_DIR} exists..."
 
 echo "### Install required packages..."
 sudo apt-get install -y ca-certificates openssl
- 
+
 echo "### Create the config file to sign the ${DOMAIN} csr..."
 cat > ${CERTS_DIR}/${DOMAIN}-csr.conf <<EOF
 [req]
@@ -68,7 +68,7 @@ openssl req -new \
  -out "${CERTS_DIR}/${DOMAIN}.csr" \
  -extensions v3_req \
  -config "${CERTS_DIR}/${DOMAIN}-csr.conf"
- 
+
  echo "### Sign the csr with our ca's cert..."
 openssl x509 -req \
  -in "${CERTS_DIR}/${DOMAIN}.csr" \
@@ -80,10 +80,10 @@ openssl x509 -req \
  -sha256 \
  -extfile "${CERTS_DIR}/${DOMAIN}-csr.conf" \
  -extensions v3_req
- 
+
 echo "### Get ${DOMAIN}.crt data..."
 openssl x509 -text -in "${CERTS_DIR}/${DOMAIN}.CERT.pem"
- 
+
 echo "### Re-check ${DOMAIN}.crt data..."
 openssl req -in "${CERTS_DIR}/${DOMAIN}.csr" -noout -text
 
@@ -102,10 +102,11 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
   if [[ $(uname -r) == *"WSL"* ]]; then
     cp "${CERTS_DIR}/${DOMAIN}-CA.pem" "${CERTS_DIR}/${DOMAIN}-FULLCHAIN.pem" "${CERTS_DIR}/${DOMAIN}-KEYCHAIN.pem" "${CERTS_DIR}/${DOMAIN}.key" /mnt/c/Windows/Temp
     powershell.exe Start-Process powershell -Verb RunAs -ArgumentList "Import-Certificate, -FilePath, C:\\Windows\\Temp\\${DOMAIN}-CA.pem, -CertStoreLocation, Cert:\LocalMachine\Root"
+    powershell.exe Start-Process powershell -Verb RunAs -ArgumentList -ExecutionPolicy Bypass -File "win_update_hosts.ps1 ${DOMAIN}"
   fi
   echo "### Update OS certificates..."
   sudo update-ca-certificates
-  echo "### Check installed certificate for ${DOMAIN}..." 
+  echo "### Check installed certificate for ${DOMAIN}..."
   awk -v cmd='openssl x509 -noout -subject' '/BEGIN/{close(cmd)};{print | cmd}' < /etc/ssl/certs/ca-certificates.crt | grep ${DOMAIN}
   echo "### Echo removing cert file from system dir..."
   sudo rm /usr/local/share/ca-certificates/${DOMAIN}.CA.crt
@@ -121,4 +122,5 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 echo "### If using Firefox (Set system wide certificate validation)..."
-echo "Go to: about:config\nSet: security.enterprise_roots.enabled to true"
+echo "Go to: about:config"
+echo "Set: security.enterprise_roots.enabled to true"
